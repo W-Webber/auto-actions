@@ -4,6 +4,7 @@
 name: auto_sign_pt
 
 on:
+  workflow_dispatch:
   watch:
     types: [ started ]
   push:
