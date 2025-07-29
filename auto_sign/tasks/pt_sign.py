@@ -118,13 +118,62 @@ def signin(session, url, name):
             # if url == "https://www.hddolby.com" or url == "https://pt.btschool.club":
             # print(res.text)
             if r.search(res.text):
-                tip = ' 重复签到'
+                tip = get_bonus_info(res)
+                tip += '[请勿重复签到]'
             elif r1.search(res.text):
-                tip = ' 签到成功'
+                # tip = ' 签到成功!'
+                tip = get_bonus_info(res)
             else:
                 tip = ' cookie已过期'
+
+
             print(now(), ' 网站：%s' % url, tip)
-            txt += '网站：<a href="%s">%s</a>' % (url, name) + tip + '\n'
+            txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
+
+def get_bonus_info(res):
+    res_str = "\n"
+    r_success = re.compile(r'签到成功')
+    if r_success.search(res.text):
+        # 获取签到天数，连续签到天数，获得魔力值等
+        r_res = re.compile(r'签到成功[\s\S]*</span>')
+        if r_res.search(res.text):
+            r_matches = r_res.findall(res.text)
+            contents = r_matches[0]
+            print(now(), 'contents: %s', contents)
+            r_html_tag = re.compile(r'<[^>]+>', re.S)
+            result = r_html_tag.sub('', contents)
+            print(now(), 'result: %s' % result)
+            # 截取天数信息
+            r_days = re.compile(r'第[^。]*。')
+            if r_days.search(result):
+                result_days = r_days.findall(result)
+                result_day_tmp = result_days[0]
+                # 第xxx次签到成功
+                r_day = re.compile(r'第[^，]*次签到')
+                if r_day.search(result_day_tmp):
+                    result_day = r_day.findall(result_day_tmp)[0]
+                    res_str += result_day + "成功！\n\n"
+                # 连续签到xxx天
+                r_day = re.compile(r'已连续签到[\s\S]*天')
+                if r_day.search(result_day_tmp):
+                    result_day_cont = r_day.findall(result_day_tmp)[0]
+                    res_str += result_day_cont + "\n\n"
+                # 获得xxx个魔力值
+                r_bonus = re.compile(r'本次[\s\S]*魔力值')
+                if r_bonus.search(result_day_tmp):
+                    result_bonus = r_bonus.findall(result_day_tmp)[0]
+                    res_str += result_bonus + "\n\n"
+
+            # 截取排名信息
+            r_rank = re.compile(r'签到排名[\s\S]*')
+            if r_rank.search(result):
+                result_rank = r_rank.findall(result)
+                res_str += result_rank[0] + "\n\n"
+
+            print(now(), 'res_str: %s' % res_str)
+
+    return res_str
+
 
 
 # discuz系列签到
@@ -204,9 +253,11 @@ def main():
     # cookie过期发送qq推送信息
     r = re.compile(r'过期')
     r1 = re.compile(r'重复')
-    if r.search(txt) or r1.search(txt):
-        # sendQmsgInfo(txt)
-        send_telegram(txt)
+    # if r.search(txt) or r1.search(txt):
+    #     # sendQmsgInfo(txt)
+    #     send_telegram(txt)
+
+    send_telegram(txt)
 
 
 
