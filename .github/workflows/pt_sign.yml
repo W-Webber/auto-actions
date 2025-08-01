@@ -12,7 +12,7 @@ on:
   pull_request:
     branches: [master]
   schedule:
-    - cron: '0 23 * * *'
+    - cron: '0 16 * * *'
     # 国家时间 午夜12点 北京时间早上7点触发
 jobs:
   pt_sign:
