@@ -5,7 +5,7 @@ from json.decoder import JSONDecodeError
 from auto_sign.config import generateConfig
 from auto_sign.utility.function import now, nowstamp, sendQmsgInfo, send_telegram
 
-txt = now()+" PT签到\n"
+txt = now()+"\n\n───────────────── PT签到 ─────────────────\n\n"
 
 
 def signin(session, url, name):
@@ -129,6 +129,7 @@ def signin(session, url, name):
 
             print(now(), ' 网站：%s' % url, tip)
             txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
+    txt += '────────────────────────────────────────\n\n'
 
 def get_bonus_info(res):
     res_str = "\n"
@@ -168,7 +169,10 @@ def get_bonus_info(res):
             r_rank = re.compile(r'签到排名[\s\S]*')
             if r_rank.search(result):
                 result_rank = r_rank.findall(result)
-                res_str += result_rank[0] + "\n\n"
+                result_rank_str = result_rank[0]
+                find_idx = result_rank_str.index('/')
+                result_rank_str = result_rank_str[0: find_idx - 1]
+                res_str += result_rank_str + "\n\n"
 
             print(now(), 'res_str: %s' % res_str)
 
