@@ -160,9 +160,9 @@ def get_bonus_info(res):
                     result_day_cont = r_day.findall(result_day_tmp)[0]
                     res_str += result_day_cont + "\n\n"
                 # 获得xxx个魔力值
-                r_bonus = re.compile(r'本次[\s\S]*魔力值')
-                if r_bonus.search(result_day_tmp):
-                    result_bonus = r_bonus.findall(result_day_tmp)[0]
+                r_added_bonus = re.compile(r'本次[\s\S]*魔力值')
+                if r_added_bonus.search(result_day_tmp):
+                    result_bonus = r_added_bonus.findall(result_day_tmp)[0]
                     res_str += result_bonus + "\n\n"
 
             # 截取排名信息
@@ -175,6 +175,18 @@ def get_bonus_info(res):
                 res_str += result_rank_str + "\n\n"
 
             print(now(), 'res_str: %s' % res_str)
+
+            # 获取当前魔力值
+            r_bonus = re.compile(r'\]:[\s\S]*\[签到')
+            if r_bonus.search(res.text):
+                result_bonus = r_bonus.findall(res.text)[0]
+                # 去除html标签
+                result_bonus = r_html_tag.sub('', result_bonus)
+                # 匹配数字、英文逗号、英文句号
+                r_bonus_num = re.compile(r'[\d,\.]+')
+                result_bonus = r_bonus_num.findall(result_bonus)[0]
+                print("result_bonus: %s" % result_bonus)
+                res_str += "当前魔力值: %s" % result_bonus + "\n\n"
 
     return res_str
 
