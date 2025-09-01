@@ -1,3 +1,5 @@
+# cron: 0 0 * * *
+
 import sys
 from auto_sign.tasks.pt_say_thanks import main as saythanks
 from auto_sign.tasks.pt_sign import main as signin
