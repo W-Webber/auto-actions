@@ -125,6 +125,7 @@ def signin(session, url, name):
                 tip = get_bonus_info(res)
             else:
                 tip = ' cookie已过期'
+                print(res.text + '\n')
 
 
             print(now(), ' 网站：%s' % url, tip)
@@ -160,10 +161,10 @@ def get_bonus_info(res):
                     result_day_cont = r_day.findall(result_day_tmp)[0]
                     res_str += result_day_cont + "\n\n"
                 # 获得xxx个魔力值
-                r_added_bonus = re.compile(r'本次[\s\S]*魔力值')
+                r_added_bonus = re.compile(r'本次[\s\S]*个')
                 if r_added_bonus.search(result_day_tmp):
                     result_bonus = r_added_bonus.findall(result_day_tmp)[0]
-                    res_str += result_bonus + "\n\n"
+                    res_str += result_bonus + "魔力值\n\n"
 
             # 截取排名信息
             r_rank = re.compile(r'签到排名[\s\S]*')
