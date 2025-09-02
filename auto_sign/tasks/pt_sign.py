@@ -1,5 +1,6 @@
 import json
 import re
+import time
 from json.decoder import JSONDecodeError
 
 from auto_sign.config import generateConfig
@@ -112,7 +113,16 @@ def signin(session, url, name):
         attendance_url = url + '/attendance.php'
         # 绕过cf5秒盾
         # session = cloudscraper.create_scraper(session)
+
+        # 解决PT站点第一次请求/attendance.php页面签到时，抓取到的魔力值为签到前的旧数据问题
         with session.get(attendance_url) as res:
+            print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
+
+        # 等待0.5秒再请求
+        time.sleep(0.5)
+
+        with session.get(attendance_url) as res:
+            # print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
             r = re.compile(r'请勿重复刷新')
             r1 = re.compile(r'签到已得[\s]*\d+')
             # if url == "https://www.hddolby.com" or url == "https://pt.btschool.club":
@@ -125,7 +135,7 @@ def signin(session, url, name):
                 tip = get_bonus_info(res)
             else:
                 tip = ' cookie已过期'
-                print(res.text + '\n')
+                print(now(), res.text + '\n')
 
 
             print(now(), ' 网站：%s' % url, tip)
@@ -141,10 +151,10 @@ def get_bonus_info(res):
         if r_res.search(res.text):
             r_matches = r_res.findall(res.text)
             contents = r_matches[0]
-            print(now(), 'contents: %s', contents)
+            # print(now(), 'contents: %s', contents)
             r_html_tag = re.compile(r'<[^>]+>', re.S)
             result = r_html_tag.sub('', contents)
-            print(now(), 'result: %s' % result)
+            # print(now(), 'result: %s' % result)
             # 截取天数信息
             r_days = re.compile(r'第[^。]*。')
             if r_days.search(result):
@@ -175,7 +185,7 @@ def get_bonus_info(res):
                 result_rank_str = result_rank_str[0: find_idx - 1]
                 res_str += result_rank_str + "\n\n"
 
-            print(now(), 'res_str: %s' % res_str)
+            # print(now(), 'res_str: %s' % res_str)
 
             # 获取当前魔力值
             r_bonus = re.compile(r'\]:[\s\S]*\[签到')
@@ -186,7 +196,7 @@ def get_bonus_info(res):
                 # 匹配数字、英文逗号、英文句号
                 r_bonus_num = re.compile(r'[\d,\.]+')
                 result_bonus = r_bonus_num.findall(result_bonus)[0]
-                print("result_bonus: %s" % result_bonus)
+                # print("result_bonus: %s" % result_bonus)
                 res_str += "当前魔力值: %s" % result_bonus + "\n\n"
 
     return res_str
