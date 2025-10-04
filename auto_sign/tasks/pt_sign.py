@@ -124,7 +124,8 @@ def signin(session, url, name):
         with session.get(attendance_url) as res:
             # print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
             r = re.compile(r'请勿重复刷新')
-            r1 = re.compile(r'签到已得[\s]*\d+')
+            r1 = re.compile(r'[签簽]到已得[\s]*\d+')
+            # r2 = re.compile(r'簽到已得[\s]*\d+')
             # if url == "https://www.hddolby.com" or url == "https://pt.btschool.club":
             # print(res.text)
             if r.search(res.text):
@@ -144,10 +145,10 @@ def signin(session, url, name):
 
 def get_bonus_info(res):
     res_str = "\n"
-    r_success = re.compile(r'签到成功')
+    r_success = re.compile(r'[签簽]到成功')
     if r_success.search(res.text):
         # 获取签到天数，连续签到天数，获得魔力值等
-        r_res = re.compile(r'签到成功[\s\S]*</span>')
+        r_res = re.compile(r'[签簽]到成功[\s\S]*</span>')
         if r_res.search(res.text):
             r_matches = r_res.findall(res.text)
             contents = r_matches[0]
@@ -161,23 +162,23 @@ def get_bonus_info(res):
                 result_days = r_days.findall(result)
                 result_day_tmp = result_days[0]
                 # 第xxx次签到成功
-                r_day = re.compile(r'第[^，]*次签到')
+                r_day = re.compile(r'第[^，]*次[签簽]到')
                 if r_day.search(result_day_tmp):
                     result_day = r_day.findall(result_day_tmp)[0]
                     res_str += result_day + "成功！\n\n"
                 # 连续签到xxx天
-                r_day = re.compile(r'已连续签到[\s\S]*天')
+                r_day = re.compile(r'已[连連][续續][签簽]到[\s\S]*天')
                 if r_day.search(result_day_tmp):
                     result_day_cont = r_day.findall(result_day_tmp)[0]
                     res_str += result_day_cont + "\n\n"
                 # 获得xxx个魔力值
-                r_added_bonus = re.compile(r'本次[\s\S]*个')
+                r_added_bonus = re.compile(r'本次[\s\S]*[个個]')
                 if r_added_bonus.search(result_day_tmp):
                     result_bonus = r_added_bonus.findall(result_day_tmp)[0]
                     res_str += result_bonus + "魔力值\n\n"
 
             # 截取排名信息
-            r_rank = re.compile(r'签到排名[\s\S]*')
+            r_rank = re.compile(r'[签簽]到排名[\s\S]*')
             if r_rank.search(result):
                 result_rank = r_rank.findall(result)
                 result_rank_str = result_rank[0]
@@ -188,7 +189,7 @@ def get_bonus_info(res):
             # print(now(), 'res_str: %s' % res_str)
 
             # 获取当前魔力值
-            r_bonus = re.compile(r'\]:[\s\S]*\[签到')
+            r_bonus = re.compile(r'\]:[\s\S]*\[[签簽]到')
             if r_bonus.search(res.text):
                 result_bonus = r_bonus.findall(res.text)[0]
                 # 去除html标签
