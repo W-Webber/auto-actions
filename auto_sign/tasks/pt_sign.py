@@ -5,6 +5,7 @@ from json.decoder import JSONDecodeError
 
 from auto_sign.config import generateConfig
 from auto_sign.utility.function import now, nowstamp, sendQmsgInfo, send_telegram
+from datetime import datetime
 
 txt = now()+"\n\n────── PT签到 ──────\n\n"
 
@@ -109,19 +110,42 @@ def signin(session, url, name):
                 tip = ' cookie已过期'
             print(now(), ' 网站：%s' % url, tip)
             txt += '网站：<a href="%s">%s</a>' % (url, name) + tip + '\n'
+    elif url == "https://www.pttime.org":
+        attendance_url = url + '/attendance.php?type=sign'
+
+        with session.get(attendance_url) as res:
+            # print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
+            r = re.compile(r'请勿重复刷新')
+            r1 = re.compile(r'今日签到成功')
+            if r.search(res.text):
+                tip = get_bonus_info_pttime_repeat(res)
+                tip += '[请勿重复签到]'
+            elif r1.search(res.text):
+                # tip = ' 签到成功!'
+                tip = get_bonus_info_pttime(res)
+            else:
+                if res.status_code != 200:
+                    print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
+                    tip = f'\n\n站点访问异常，错误码：[{res.status_code}]\n\n'
+                else:
+                    tip = '\n\ncookie已过期\n\n'
+                print(now(), res.text + '\n')
+
+            print(now(), ' 网站：%s' % url, tip)
+            txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
     else:
         attendance_url = url + '/attendance.php'
         # 绕过cf5秒盾
         # session = cloudscraper.create_scraper(session)
 
         # 解决PT站点第一次请求/attendance.php页面签到时，抓取到的魔力值为签到前的旧数据问题
-        with session.get(attendance_url) as res:
+        with session.get(attendance_url, timeout=15) as res:
             print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
 
         # 等待0.5秒再请求
         time.sleep(0.5)
 
-        with session.get(attendance_url) as res:
+        with session.get(attendance_url, timeout=15) as res:
             # print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
             r = re.compile(r'请勿重复刷新')
             r1 = re.compile(r'[签簽]到已得[\s]*\d+')
@@ -135,13 +159,125 @@ def signin(session, url, name):
                 # tip = ' 签到成功!'
                 tip = get_bonus_info(res)
             else:
-                tip = ' cookie已过期'
+                if res.status_code != 200:
+                    print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
+                    tip = f'\n\n站点访问异常，错误码：[{res.status_code}]\n\n'
+                else:
+                    tip = '\n\ncookie已过期\n\n'
                 print(now(), res.text + '\n')
 
 
             print(now(), ' 网站：%s' % url, tip)
             txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
     txt += '────────────────\n\n'
+
+def smart_to_number(s: str):
+    """
+    将字符串转换为数字（自动识别整数/小数/科学计数法）。
+    支持包含货币符号、逗号、中文单位等。
+    """
+    if not isinstance(s, str):
+        return None
+
+    # 1. 去除空格
+    s = s.strip()
+
+    # 2. 删除常见货币符号和单位
+    s = re.sub(r'[￥¥$€元円円,，]', '', s)
+
+    # 3. 匹配数字（含小数点、科学计数法）
+    match = re.match(r'^[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?$', s)
+    if not match:
+        return None  # 不是有效数字
+
+    # 4. 转换为 float，再判断是否为整数
+    num = float(s)
+    return int(num) if num.is_integer() else num
+
+def get_bonus_info_pttime(res):
+    res_str = "\n"
+    this_time_bonus = -1
+    r_html_tag = re.compile(r'<[^>]+>', re.S)
+    # 第X次签到
+    r_times = re.compile(r'第[\s\S]*?次签到')
+    if r_times.search(res.text):
+        res_times = r_times.findall(res.text)[0]
+        res_times = r_html_tag.sub('', res_times)
+        res_str += f'{res_times}成功！\n\n'
+
+    # 已连续签到天数
+    r_continuous_days = re.compile(r'已连续签到[\s\S]*?天')
+    if r_continuous_days.search(res.text):
+        res_days = r_continuous_days.findall(res.text)[0]
+        res_days = r_html_tag.sub('', res_days)
+        res_str += f'{res_days}\n\n'
+
+    # 获得魔力值
+    r_bonus = re.compile(r'本次签到获得[\s\S]*?个魔力值')
+    if r_bonus.search(res.text):
+        res_bonus = r_bonus.findall(res.text)[0]
+        res_bonus = r_html_tag.sub('', res_bonus)
+        res_str += f'{res_bonus}\n\n'
+        res_bonus = res_bonus[6:-4]
+        print(f'nun_bonus: {res_bonus}')
+        this_time_bonus = smart_to_number(res_bonus)
+
+    # 当前魔力值
+    r_bonus = re.compile(r'\]: [\d,\.]+\[')
+    if r_bonus.search(res.text):
+        res_bonus = r_bonus.findall(res.text)[0]
+        res_bonus = res_bonus[2:-1]
+        print(f'nun_bonus: {res_bonus}, this_time_bonus: {this_time_bonus}')
+        num_bonus = smart_to_number(res_bonus)
+        num_bonus += this_time_bonus
+        res_str += f'当前魔力值:{num_bonus:,}\n\n'
+
+    return res_str
+
+def get_bonus_info_pttime_repeat(res):
+    res_str = "\n"
+    # r_html_tag = re.compile(r'<[^>]+>', re.S)
+    # 获取总签到天数，第xx次签到成功！
+    r_totally_days = re.compile(r'总签到：\d+天')
+    if r_totally_days.search(res.text):
+        res_days = r_totally_days.findall(res.text)[0]
+        res_days = res_days[4:-1]
+        res_str += f'第 {res_days} 次签到成功！\n\n'
+
+    # 已连续签到天数
+    r_continuous_days = re.compile(r'本次连续签到开始时间：\d+')
+    if r_continuous_days.search(res.text):
+        res_days = r_continuous_days.findall(res.text)[0]
+        res_days = res_days[11:]
+        date_first = datetime.strptime(res_days, '%Y%m%d')
+        date_second = datetime.now()
+        delta_days = abs((date_second - date_first).days)+1
+        res_str += f'已连续签到 {delta_days} 天\n\n'
+
+    # 获得魔力值
+    r_bonus = re.compile(r'获得魔力值：[\s\S]*</b>')
+    if r_bonus.search(res.text):
+        res_bonus = r_bonus.findall(res.text)[0]
+        r_bonus = re.compile(r'\d+', re.S)
+        if r_bonus.search(res_bonus):
+            res_bonus = r_bonus.findall(res_bonus)[0]
+            res_str += f'本次签到获得 {res_bonus} 个魔力值\n\n'
+        else:
+            res_str += '本次签到未获得魔力值\n\n'
+
+    # 当前魔力值
+    r_bonus = re.compile(r'\]: [\d,\.]+\[')
+    if r_bonus.search(res.text):
+        res_bonus = r_bonus.findall(res.text)[0]
+        # 去除html标签
+        # result_bonus = r_html_tag.sub('', res_bonus)
+        # 匹配数字、英文逗号、英文句号
+        # r_bonus_num = re.compile(r'[\d,\.]+')
+        # result_bonus = r_bonus_num.findall(result_bonus)[0]
+        res_bonus = res_bonus[2:-1]
+        res_str += f'当前魔力值:{res_bonus}\n\n'
+
+    return res_str
 
 def get_bonus_info(res):
     res_str = "\n"
