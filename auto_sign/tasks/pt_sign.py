@@ -113,61 +113,71 @@ def signin(session, url, name):
     elif url == "https://www.pttime.org":
         attendance_url = url + '/attendance.php?type=sign'
 
-        with session.get(attendance_url) as res:
-            # print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
-            r = re.compile(r'请勿重复刷新')
-            r1 = re.compile(r'今日签到成功')
-            if r.search(res.text):
-                tip = get_bonus_info_pttime_repeat(res)
-                tip += '[请勿重复签到]'
-            elif r1.search(res.text):
-                # tip = ' 签到成功!'
-                tip = get_bonus_info_pttime(res)
-            else:
-                if res.status_code != 200:
-                    print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
-                    tip = f'\n\n站点访问异常，错误码：[{res.status_code}]\n\n'
+        try:
+            with session.get(attendance_url) as res:
+                # print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
+                r = re.compile(r'请勿重复刷新')
+                r1 = re.compile(r'今日签到成功')
+                if r.search(res.text):
+                    tip = get_bonus_info_pttime_repeat(res)
+                    tip += '[请勿重复签到]'
+                elif r1.search(res.text):
+                    # tip = ' 签到成功!'
+                    tip = get_bonus_info_pttime(res)
                 else:
-                    tip = '\n\ncookie已过期\n\n'
-                print(now(), res.text + '\n')
+                    if res.status_code != 200:
+                        print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
+                        tip = f'\n\n站点访问异常，错误码：[{res.status_code}]\n\n'
+                    else:
+                        tip = '\n\ncookie已过期\n\n'
+                    print(now(), res.text + '\n')
 
-            print(now(), ' 网站：%s' % url, tip)
+                print(now(), ' 网站：%s' % url, tip)
+                txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
+        except Exception as e:
+            print(now(), '签到失败! \n'+'返回数据:'+res.text+'\n'+f'异常 : {e}')
+            tip = f'\n\n站点访问异常，错误码：[{e}]\n\n'
             txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
     else:
         attendance_url = url + '/attendance.php'
         # 绕过cf5秒盾
         # session = cloudscraper.create_scraper(session)
 
-        # 解决PT站点第一次请求/attendance.php页面签到时，抓取到的魔力值为签到前的旧数据问题
-        with session.get(attendance_url, timeout=15) as res:
-            print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
+        try:
+            # 解决PT站点第一次请求/attendance.php页面签到时，抓取到的魔力值为签到前的旧数据问题
+            with session.get(attendance_url, timeout=15) as res:
+                print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
 
-        # 等待0.5秒再请求
-        time.sleep(0.5)
+            # 等待0.5秒再请求
+            time.sleep(0.5)
 
-        with session.get(attendance_url, timeout=15) as res:
-            # print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
-            r = re.compile(r'请勿重复刷新')
-            r1 = re.compile(r'[签簽]到已得[\s]*\d+')
-            # r2 = re.compile(r'簽到已得[\s]*\d+')
-            # if url == "https://www.hddolby.com" or url == "https://pt.btschool.club":
-            # print(res.text)
-            if r.search(res.text):
-                tip = get_bonus_info(res)
-                tip += '[请勿重复签到]'
-            elif r1.search(res.text):
-                # tip = ' 签到成功!'
-                tip = get_bonus_info(res)
-            else:
-                if res.status_code != 200:
-                    print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
-                    tip = f'\n\n站点访问异常，错误码：[{res.status_code}]\n\n'
+            with session.get(attendance_url, timeout=15) as res:
+                # print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
+                r = re.compile(r'请勿重复刷新')
+                r1 = re.compile(r'[签簽]到已得[\s]*\d+')
+                # r2 = re.compile(r'簽到已得[\s]*\d+')
+                # if url == "https://www.hddolby.com" or url == "https://pt.btschool.club":
+                # print(res.text)
+                if r.search(res.text):
+                    tip = get_bonus_info(res)
+                    tip += '[请勿重复签到]'
+                elif r1.search(res.text):
+                    # tip = ' 签到成功!'
+                    tip = get_bonus_info(res)
                 else:
-                    tip = '\n\ncookie已过期\n\n'
-                print(now(), res.text + '\n')
+                    if res.status_code != 200:
+                        print(now(), 'Request URL[%s] status code: [%d]' % (attendance_url, res.status_code))
+                        tip = f'\n\n站点访问异常，错误码：[{res.status_code}]\n\n'
+                    else:
+                        tip = '\n\ncookie已过期\n\n'
+                    print(now(), res.text + '\n')
 
 
-            print(now(), ' 网站：%s' % url, tip)
+                print(now(), ' 网站：%s' % url, tip)
+                txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
+        except Exception as e:
+            print(now(), '签到失败! \n'+'返回数据:'+res.text+'\n'+f'异常 : {e}')
+            tip = f'\n\n站点访问异常，错误码：[{e}]\n\n'
             txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
     txt += '────────────────\n\n'
 
