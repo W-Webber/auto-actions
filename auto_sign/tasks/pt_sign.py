@@ -135,7 +135,7 @@ def signin(session, url, name):
                 print(now(), ' 网站：%s' % url, tip)
                 txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
         except Exception as e:
-            print(now(), '签到失败! \n'+'返回数据:'+res.text+'\n'+f'异常 : {e}')
+            print(now(), '签到失败! \n' + f'异常 : {e}')
             tip = f'\n\n站点访问异常，错误码：[{e}]\n\n'
             txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
     else:
@@ -176,7 +176,7 @@ def signin(session, url, name):
                 print(now(), ' 网站：%s' % url, tip)
                 txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
         except Exception as e:
-            print(now(), '签到失败! \n'+'返回数据:'+res.text+'\n'+f'异常 : {e}')
+            print(now(), '签到失败! \n' + f'异常 : {e}')
             tip = f'\n\n站点访问异常，错误码：[{e}]\n\n'
             txt += '<a href="%s">%s</a>站点: \n' % (url, name) + tip + '\n'
     txt += '────────────────\n\n'
